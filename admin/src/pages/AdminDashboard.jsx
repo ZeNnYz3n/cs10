@@ -1,9 +1,11 @@
 import { useState, useEffect } from 'react';
+import { Link } from 'react-router-dom';
 import { adminDashboard } from '../services/api';
 import {
   LuCircleHelp, LuTag, LuMessageSquare, LuClock, LuFileQuestion,
   LuTrendingUp, LuActivity, LuCircleCheck, LuCircleX, LuRefreshCw, LuUsers, LuGlobe
 } from 'react-icons/lu';
+import { FiZap } from 'react-icons/fi';
 
 function StatCard({ icon: Icon, label, value, color, bgColor, sub }) {
   return (
@@ -47,6 +49,7 @@ export default function AdminDashboard() {
     { icon: LuTag,          label: 'Categories',        value: stats?.categoryCount ?? '—',          color: '#0891b2', bgColor: '#cffafe', sub: 'topic groups' },
     { icon: LuUsers,        label: 'Total Users',       value: stats?.userCount ?? '—',              color: '#16a34a', bgColor: '#dcfce7', sub: 'registered members' },
     { icon: LuGlobe,        label: 'Community Qs',      value: stats?.communityQueryCount ?? '—',    color: '#8b5cf6', bgColor: '#ede9fe', sub: 'from the community' },
+    { icon: FiZap,          label: 'Spotlighted',       value: stats?.spotlightedCount ?? '—',       color: '#f59e0b', bgColor: '#fef3c7', sub: 'need attention' },
     { icon: LuMessageSquare,label: 'Search Queries',    value: stats?.queryCount ?? '—',             color: '#059669', bgColor: '#d1fae5', sub: 'search deflections' },
     { icon: LuClock,        label: 'Pending Answers',   value: stats?.pendingModeration ?? '—',      color: '#d97706', bgColor: '#fef3c7', sub: 'awaiting review' },
     { icon: LuFileQuestion, label: 'FAQ Proposals',     value: stats?.pendingFaqProposals ?? '—',    color: '#db2777', bgColor: '#fce7f3', sub: 'from community' },

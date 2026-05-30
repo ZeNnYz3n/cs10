@@ -287,6 +287,14 @@ class AdminController {
     const result = await adminService.createMasterFaq({ masterQuestion, masterAnswer, category, questionIds, tags });
     res.status(201).json(result);
   });
+
+  /**
+   * Get all spotlighted questions (unanswered for >2 mins).
+   */
+  getSpotlightedQuestions = catchAsync(async (req, res) => {
+    const result = await adminService.getSpotlightedQuestions();
+    res.json(result);
+  });
 }
 
 export default new AdminController();

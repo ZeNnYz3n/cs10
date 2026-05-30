@@ -1,58 +1,53 @@
-/**
- * Seed Admin Account
- * Creates or resets an admin account (admin123@gmail.com / admin123)
- */
-
-import 'dotenv/config';
+import '../dns-setup.js'; // DNS setup
 import mongoose from 'mongoose';
 import bcrypt from 'bcryptjs';
-import User from '../models/User.js';
+import dotenv from 'dotenv';
+
+// Import the User model (adjust path if running from a different folder)
+import User from '../models/User.js'; 
+
+dotenv.config();
+
+// Replace with your other database URI if not using the .env file
+const MONGODB_URI = process.env.MONGODB_URI || 'YOUR_OTHER_DATABASE_URI_HERE';
 
 async function seedAdmin() {
   try {
-    console.log('🔧 Initializing Admin Seeding...');
+    await mongoose.connect(MONGODB_URI);
+    console.log(`Connected to MongoDB: ${MONGODB_URI}`);
 
-    if (!process.env.MONGODB_URI) {
-      throw new Error('MONGODB_URI is not defined in .env file');
+    // Set your desired admin credentials here
+    const adminEmail = 'admin@samagama.com';
+    const adminPassword = 'adminpassword123';
+
+    // 1. Check if this admin already exists
+    let admin = await User.findOne({ email: adminEmail });
+    if (admin) {
+      console.log(`Admin with email ${adminEmail} already exists!`);
+      return;
     }
 
-    await mongoose.connect(process.env.MONGODB_URI);
-    console.log('  ✅ Connected to MongoDB');
+    // 2. Hash the password
+    const salt = await bcrypt.genSalt(10);
+    const hashedPassword = await bcrypt.hash(adminPassword, salt);
 
-    const adminEmail = 'admin123@gmail.com';
-    const adminPassword = 'admin123';
+    // 3. Create the admin user
+    admin = new User({
+      name: 'Super Admin',
+      email: adminEmail,
+      password_hash: hashedPassword, // Fixed from 'password' to match the User schema
+      role: 'admin',
+      xp: 0
+    });
 
-    // Hash password with 12 rounds to match registration
-    const password_hash = await bcrypt.hash(adminPassword, 12);
+    await admin.save();
+    
+    console.log('✅ Admin user seeded successfully!');
+    console.log(`Email: ${adminEmail}`);
+    console.log(`Password: ${adminPassword}`);
 
-    const existingAdmin = await User.findOne({ email: adminEmail });
-
-    if (existingAdmin) {
-      console.log(`  ⏳ Admin account "${adminEmail}" already exists. Resetting password and ensuring role...`);
-      existingAdmin.password_hash = password_hash;
-      existingAdmin.role = 'admin';
-      existingAdmin.name = 'Admin';
-      await existingAdmin.save();
-      console.log('  ✅ Admin account password reset successfully!');
-    } else {
-      console.log(`  ⏳ Creating a brand new Admin account: "${adminEmail}"...`);
-      await User.create({
-        name: 'Admin',
-        email: adminEmail,
-        password_hash,
-        role: 'admin',
-      });
-      console.log('  ✅ Admin account created successfully!');
-    }
-
-    console.log('\n=============================================================');
-    console.log('🎉 ADMIN CREDENTIALS ACTIVE:');
-    console.log(`   Email:    ${adminEmail}`);
-    console.log(`   Password: ${adminPassword}`);
-    console.log('=============================================================\n');
-
-  } catch (error) {
-    console.error('❌ Admin seeding failed:', error.message);
+  } catch (err) {
+    console.error('❌ Error seeding admin:', err);
   } finally {
     await mongoose.disconnect();
     process.exit(0);

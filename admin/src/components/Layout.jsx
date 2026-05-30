@@ -3,11 +3,13 @@ import {
   LuLayoutDashboard, LuCircleHelp, LuShieldCheck, LuChartBar,
   LuLogOut, LuBell, LuChevronDown, LuZap, LuUsers, LuSparkles
 } from 'react-icons/lu';
+import { FiZap } from 'react-icons/fi';
 
 const navItems = [
   { to: '/dashboard',  label: 'Dashboard',   icon: LuLayoutDashboard },
   { to: '/faqs',       label: 'FAQs',         icon: LuCircleHelp },
   { to: '/moderation', label: 'Moderation',   icon: LuShieldCheck },
+  { to: '/spotlight',  label: 'Spotlight',    icon: FiZap },
   { to: '/knowledge',  label: 'Knowledge Review', icon: LuSparkles },
   { to: '/users',      label: 'Users',        icon: LuUsers },
   { to: '/analytics',  label: 'Analytics',    icon: LuChartBar },
@@ -17,6 +19,7 @@ const pageTitles = {
   '/dashboard':  'Dashboard',
   '/faqs':       'FAQ Management',
   '/moderation': 'Moderation',
+  '/spotlight':  'Spotlighted Questions',
   '/knowledge':  'Knowledge Review',
   '/users':      'User Management',
   '/analytics':  'Analytics',

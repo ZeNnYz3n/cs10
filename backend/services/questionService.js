@@ -7,6 +7,28 @@ import { rephraseQuery } from './groq.js';
 import { getEmbedding } from './embeddingService.js';
 import AppError from '../utils/appError.js';
 
+// Spotlight threshold: 2 minutes in milliseconds
+const SPOTLIGHT_THRESHOLD_MS = 2 * 60 * 1000;
+
+/**
+ * Check if a question should be spotlighted.
+ * A question is spotlighted if:
+ * - Status is 'open'
+ * - Has 0 answers
+ * - Has been unanswered for more than 2 minutes
+ * 
+ * @param {Object} question - Question document
+ * @returns {boolean}
+ */
+export const isSpotlighted = (question) => {
+  if (question.status !== 'open' || question.answer_count > 0) {
+    return false;
+  }
+  const createdAt = new Date(question.created_at).getTime();
+  const now = Date.now();
+  return (now - createdAt) > SPOTLIGHT_THRESHOLD_MS;
+};
+
 /**
  * Service managing community questions, duplicate checking, and votes.
  */
@@ -112,9 +134,10 @@ class QuestionService {
 
   /**
    * Fetch paginated list of community questions.
+   * Spotlighted questions (0 answers, >2 mins old) appear first regardless of sort.
    *
    * @param {Object} queryOptions - Filters and paging values
-   * @returns {Promise<{data: Array, total: number, page: number, pages: number}>}
+   * @returns {Promise<{data: Array, total: number, page: number, pages: number, spotlightCount: number}>}
    */
   async list({ category, status = 'open', page = 1, sort = 'newest', limit = 20 } = {}) {
     const pageNum = Math.max(1, parseInt(page));
@@ -144,11 +167,53 @@ class QuestionService {
       Question.countDocuments(filter),
     ]);
 
+    // Add spotlight status to each question
+    const questionsWithSpotlight = questions.map(q => ({
+      ...q,
+      is_spotlighted: isSpotlighted(q),
+    }));
+
+    // Split into spotlighted and non-spotlighted
+    const spotlighted = questionsWithSpotlight.filter(q => q.is_spotlighted);
+    const nonSpotlighted = questionsWithSpotlight.filter(q => !q.is_spotlighted);
+
+    // Sort each group by the requested sort (spotlighted by newest first, then non-spotlighted by the requested sort)
+    spotlighted.sort((a, b) => new Date(b.created_at) - new Date(a.created_at));
+    
+    // Combine: spotlighted first, then non-spotlighted
+    const sortedQuestions = [...spotlighted, ...nonSpotlighted];
+
     return {
-      data: questions,
+      data: sortedQuestions,
       total,
       page: pageNum,
       pages: Math.ceil(total / limitNum),
+      spotlightCount: spotlighted.length,
+    };
+  }
+
+  /**
+   * Get all spotlighted questions (for admin view).
+   * Spotlighted = open questions with 0 answers that are older than 2 minutes.
+   *
+   * @returns {Promise<{data: Array, total: number}>}
+   */
+  async getSpotlighted() {
+    const threshold = new Date(Date.now() - SPOTLIGHT_THRESHOLD_MS);
+
+    const spotlightedQuestions = await Question.find({
+      status: 'open',
+      answer_count: 0,
+      created_at: { $lt: threshold },
+    })
+      .populate('posted_by', 'name email')
+      .select('rephrased_query original_query category status answer_count net_score created_at posted_by')
+      .sort({ created_at: 1 }) // Oldest first (most urgent)
+      .lean();
+
+    return {
+      data: spotlightedQuestions,
+      total: spotlightedQuestions.length,
     };
   }
 

@@ -13,6 +13,9 @@ import SPLedger from '../models/SPLedger.js';
 
 const generateFingerprint = (text) => crypto.createHash('sha256').update(text.toLowerCase().trim()).digest('hex');
 
+// Spotlight threshold: 2 minutes in milliseconds
+const SPOTLIGHT_THRESHOLD_MS = 2 * 60 * 1000;
+
 /**
  * Service managing all administrative and moderation capabilities.
  */
@@ -46,7 +49,7 @@ class AdminService {
   }
 
   /**
-   * Get dashboard stats.
+   * Get dashboard stats (includes spotlighted questions count).
    */
   async getDashboard() {
     const faqCount = await FAQ.countDocuments();
@@ -59,6 +62,15 @@ class AdminService {
       promoted_to_corpus: { $ne: true },
       net_score: { $gte: 3 }
     });
+
+    // Count spotlighted questions: open, 0 answers, >2 mins old
+    const spotlightThreshold = new Date(Date.now() - SPOTLIGHT_THRESHOLD_MS);
+    const spotlightedCount = await Question.countDocuments({
+      status: 'open',
+      answer_count: 0,
+      created_at: { $lt: spotlightThreshold },
+    });
+
     const recentLogs = await SemanticCache.find().sort({ created_at: -1 }).limit(10).lean();
 
     return {
@@ -68,7 +80,33 @@ class AdminService {
       communityQueryCount,
       pendingModeration,
       pendingFaqProposals,
+      spotlightedCount,
       recentLogs,
+    };
+  }
+
+  /**
+   * Get all spotlighted questions.
+   * Spotlighted = open questions with 0 answers older than 2 minutes.
+   *
+   * @returns {Promise<{data: Array, total: number}>}
+   */
+  async getSpotlightedQuestions() {
+    const threshold = new Date(Date.now() - SPOTLIGHT_THRESHOLD_MS);
+
+    const spotlightedQuestions = await Question.find({
+      status: 'open',
+      answer_count: 0,
+      created_at: { $lt: threshold },
+    })
+      .populate('posted_by', 'name email')
+      .select('rephrased_query original_query category status answer_count net_score upvotes created_at posted_by')
+      .sort({ created_at: 1 }) // Oldest first (most urgent)
+      .lean();
+
+    return {
+      data: spotlightedQuestions,
+      total: spotlightedQuestions.length,
     };
   }
 

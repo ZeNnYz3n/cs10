@@ -190,4 +190,10 @@ export async function adminDeleteCommunityQuestion(id) {
   return data;
 }
 
+// Spotlighted Questions
+export async function adminSpotlight() {
+  const { data } = await api.get('/admin/spotlight');
+  return data;
+}
+
 export default api;

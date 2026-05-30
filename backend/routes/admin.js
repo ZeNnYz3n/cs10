@@ -128,6 +128,12 @@ router.get('/community/questions', adminController.getQuestions);
 router.delete('/questions/:id', adminController.deleteQuestion);
 router.delete('/community/questions/:id', adminController.deleteQuestion);
 
+/**
+ * Spotlighted Questions
+ * Get all questions that are unanswered for >2 mins (needing community attention)
+ */
+router.get('/spotlight', adminController.getSpotlightedQuestions);
+
 /* ─────────────────────────────────────────────
    HNSW FAQ Semantic Clustering
    ───────────────────────────────────────────── */

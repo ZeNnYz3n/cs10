@@ -4,6 +4,7 @@ import api from '../api/client';
 import { useAuth } from '../context/AuthContext';
 import VoteButtons from '../components/VoteButtons';
 import { FaBolt, FaQuestion, FaCommentDots, FaEye, FaArrowLeft, FaArrowRight } from 'react-icons/fa';
+import { FiZap } from 'react-icons/fi';
 
 const CATEGORIES = ['all', 'about', 'timing', 'noc', 'selection', 'work', 'conduct', 'certificate', 'interviews', 'general'];
 
@@ -133,6 +134,11 @@ export default function CommunityBoard() {
                         {q.rephrased_query}
                       </h3>
                       <div style={{ display: 'flex', gap: '0.75rem', alignItems: 'center', flexWrap: 'wrap' }}>
+                        {q.is_spotlighted && (
+                          <span className="badge" style={{ background: 'linear-gradient(135deg, #f59e0b, #d97706)', color: '#fff', display: 'flex', alignItems: 'center', gap: '0.25rem' }}>
+                            <FiZap size={12} /> Spotlight
+                          </span>
+                        )}
                         <span className="badge badge-primary">{q.category}</span>
                         <span className={`badge ${q.status === 'open' ? 'badge-warning' : 'badge-success'}`}>
                           {q.status}
